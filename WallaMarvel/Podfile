@@ -6,7 +6,7 @@ target 'WallaMarvel' do
   use_frameworks!
 
   # Pods for WallaMarvel
-  pod 'Kingfisher', '~> 7.2.4'
+  pod 'Kingfisher', '~> 7.6.1'
 
   target 'WallaMarvelTests' do
     inherit! :search_paths
