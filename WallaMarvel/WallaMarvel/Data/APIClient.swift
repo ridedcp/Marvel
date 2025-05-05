@@ -25,7 +25,7 @@ final class APIClient: APIClientProtocol {
             params["nameStartsWith"] = query
         }
         
-        guard let url = buildURL(endpoint: "https://gateway.marvel.com/v1/public/characters", params: params) else {
+        guard let url = buildURL(endpoint: "https://gateway.marvel.com:443/v1/public/characters", params: params) else {
             completionBlock(CharacterDataContainer(count: 0, limit: 0, total: 0, offset: 0, characters: []))
             return
         }
@@ -41,7 +41,7 @@ final class APIClient: APIClientProtocol {
     }
     
     func getComics(for heroId: Int, completionBlock: @escaping ([Comic]) -> Void) {
-        let endpoint = "https://gateway.marvel.com/v1/public/characters/\(heroId)/comics"
+        let endpoint = "https://gateway.marvel.com:443/v1/public/characters/\(heroId)/comics"
         let params = authParams()
         
         guard let url = buildURL(endpoint: endpoint, params: params) else {
@@ -77,7 +77,22 @@ final class APIClient: APIClientProtocol {
     }
     
     private func performRequest<T: Decodable>(url: URL, type: T.Type, completion: @escaping (Result<T, Error>) -> Void) {
-        self.session.dataTask(with: url) { data, _, error in
+        self.session.dataTask(with: url) { data, response, error in
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(error ?? NSError(domain: "NoResponse", code: -1)))
+                return
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                if httpResponse.statusCode == 418 {
+                    completion(.failure(NSError(domain: "ServerUnavailable", code: 418)))
+                } else {
+                    completion(.failure(NSError(domain: "HTTPError", code: httpResponse.statusCode)))
+                }
+                return
+            }
+            
             guard let data = data else {
                 completion(.failure(error ?? NSError(domain: "EmptyData", code: -1)))
                 return
@@ -91,5 +106,6 @@ final class APIClient: APIClientProtocol {
             }
         }.resume()
     }
+
 
 }
